@@ -101,7 +101,7 @@ function Rm_mv(){
    resp=`echo $resp | tr [:upper:] [:lower:]`
    if [[ $resp == "y" || $resp == "yes" || $resp == "s" || $resp == "si" ]]; then
       cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
-      yes | vagrant destroy
+      vagrant destroy -f
       cd $dir_actual
       rm -r $directorio/$(cat $directorio/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
       cat $directorio/.maquinas | sed -i "$select_drop d" $directorio/.maquinas
