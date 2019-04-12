@@ -150,7 +150,7 @@ while [[ true ]]; do
         exit
         clear;;
     remove)
-         sudo rm -rf ~/MVV/*;;
+          rm -rf ~/MVV/*;;
     *)
         ;;
 
