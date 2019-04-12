@@ -66,8 +66,10 @@ function Add_so(){
     echo "5. Centos 6"
     echo "6. Windows 10 (64 bits)"
     read -p 'Introduce una opcion: ' opcion
-    while [[ $arquitertura -ne '32' && $arquitertura -ne '64' && $opcion -lt 5 ]]; do
-    read -p '64 bits o 32 bits: ' arquitertura
+    if [[ $option -lt 4 ]]; then
+    	read -p '64 bits o 32 bits: ' arquitertura
+    fi
+    while [[ $arquitertura -ne '32' && $arquitertura -ne '64' && $opcion -lt 4 ]]; do
 	clear
 	read -p 'Escriba 64 para usar una de distro de "64 bits" y 32 pra usar una de "32 bits": ' arquitertura	
     done
