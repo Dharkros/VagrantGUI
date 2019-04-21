@@ -26,7 +26,30 @@ function check_f(){
 	fi
 }
 
-function Crear_mv(){
+function cambiar_nombre_mkv(){
+
+    cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
+    read -p 'Seleciones la maquina a modificar: ' select_nombre
+    clear
+    echo 'Cual sera el nuevo nombre?'
+    read -p 'Nombre: ' new_name
+
+    cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}')
+    grep -iw "vb.name =" Vagrantfile > /dev/null 2>&1
+   
+    if [[ $? -ne 0 ]]; then
+        sed -i '2a\ config.vm.provider "virtualbox" do |vb|' Vagrantfile
+        sed -i "3a\ \ \ vb\.name = \"$new_name\"" Vagrantfile
+        sed -i '4a\ end' Vagrantfile
+    else
+        sed -i "s/vb\.name = \".*/vb\.name = \"$new_name\"/" Vagrantfile
+    fi
+    vagrant reload
+   cd $dir_actual
+}
+
+
+function Crear_mkv(){
     check_d
     read -p 'Nombre de la carpeta: ' nombre_carpeta
 
@@ -39,7 +62,7 @@ function Crear_mv(){
     Add_so
     cd $directorio/$nombre_carpeta
     echo $set_SO
-    vagrant init $set_SO 
+    vagrant init $set_SO -m
     
    
     read -p 'Nombre de la maquina: ' nombre_maquinas
@@ -64,16 +87,16 @@ function Add_so(){
     echo "3. Ubuntu 14.04 (64/32 bits)"
     echo "4. Centos 7"
     echo "5. Centos 6"
-    echo "6. Windows 10 (64 bits)"
-    read -p 'Introduce una opcion: ' opcion
+    #echo "6. Windows 10 (64 bits)"
+    read -p 'Introduce una opcion: ' opcion_add
     if [[ $option -lt 4 ]]; then
     	read -p '64 bits o 32 bits: ' arquitertura
     fi
-    while [[ $arquitertura -ne '32' && $arquitertura -ne '64' && $opcion -lt 4 ]]; do
+    while [[ $arquitertura -ne '32' && $arquitertura -ne '64' && $opcion_add -lt 4 ]]; do
 	clear
 	read -p 'Escriba 64 para usar una de distro de "64 bits" y 32 pra usar una de "32 bits": ' arquitertura	
     done
-    case $opcion in
+    case $opcion_add in
         1 )
             set_SO="ubuntu/bionic$arquitertura";;
         2 )
@@ -84,8 +107,8 @@ function Add_so(){
             set_SO="centos/7";;
         5 )
             set_SO="centos/6";;
-        6 )
-            set_SO="dharkros/windows10";;
+        #6 )
+         #   set_SO="dharkros/windows10";;
         *)
             ;;
 
@@ -93,7 +116,7 @@ function Add_so(){
 
 }
 
-function Rm_mv(){
+function Rm_mkv(){
    cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
    read -p 'Seleciones cual borrar: ' select_drop
    echo "Se va a eliminar $(cat $directorio/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $2}')"
@@ -109,41 +132,62 @@ function Rm_mv(){
    fi   
 } 
 
-function Edit_mv(){
-   clear
+function Edit_mkv(){
+    echo "1. Cambiar Nombre"
+    echo "2. Direccion IP"
+    echo "3. Adaptador De  Red"
+    echo "4. USO De RAM"
+    echo "5. USO De CPUS"
+    echo "6. Añadir HDD"
+    read -p 'Introduce una opcion: ' opcion_editar
+    clear
+   case  $opcion_editar in
+        1) 
+            cambiar_nombre_mkv;;
+        *) 
+            ;;
+   esac
 }
 
-function Cx_mv(){
+function Cx_mkv(){
    cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
    read -p 'Seleciones la maquina a conectar: ' select_ssh
    
    cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_ssh p" | awk -F":" '{print $1}')
+   clear
    vagrant ssh
    cd $dir_actual
 }
 
 while [[ true ]]; do
-    echo "1. Crear maquina"
-    echo "2. Borrar maquina"
-    echo "3. Conectar a mv"
-    echo "4. Editar maquina"
+    echo "1. Crear Maquina"
+    echo "2. Borrar Maquina"
+    echo "3. Conectar a MKV"
+    echo "4. Editar Maquina"
     echo "5. Salir"
+    #echo "5. CONTROLADOR DE INSTANTANEAS"
+    #echo "6. Aprovicionar MKV"
+    #echo "7. Salir"
     read -p 'Introduce una opcion: ' opcion
     case $opcion in
     1)
+        clear
         check_f .maquinas
-        Crear_mv
+        Crear_mkv
         Pausa;;
 
     2)
-        Rm_mv
+        clear
+        Rm_mkv
         Pausa;;
 
     3)
-        Cx_mv
+        clear
+        Cx_mkv
         clear;;
     4)
-        Edit_mv
+        clear
+        Edit_mkv
         Pausa;;
 
     5)
