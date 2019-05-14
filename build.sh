@@ -4,7 +4,7 @@ clear
 directorio=~/MVV
 dir_actual=`pwd`
 
-# Functiones
+
 
 ## Esta funcion que introduce una pausa hata pulsar la tecla "Enter".
 function Pausa(){
@@ -49,41 +49,59 @@ function cambiar_nombre_mkv(){
         sed -i "s/vb\.name = \".*/vb\.name = \"$new_name\"/" Vagrantfile
     fi
     vagrant reload
-   cd $dir_actual
+    cd $dir_actual
 }
 
 ## Crea una maquina virtual.
 function Crear_mkv(){
     check_d
     check_f .maquinas
-    read -p 'Nombre de la carpeta: ' nombre_carpeta
+    read -p 'Nombre de la maquina: ' nombre_maquina
 
-    while [[ -d $directorio/$nombre_carpeta ]]; do
-    clear
-    read -p 'La carpeta ya existe, porfavor elija otro nombre: ' nombre_carpeta	
-    done
+   while [[ -d $directorio/$nombre_maquina ]]; do
+        clear
+        read -p 'Ya existe una maquina con este nombre, porfavor elija otro nombre: ' nombre_maquina    
+   done
 
-    mkdir $directorio/$nombre_carpeta
+    mkdir $directorio/$nombre_maquina
+    
+    ## Llamamos a la funcion add_so para selecionar sistema operativo 
     Add_so
-    cd $directorio/$nombre_carpeta
-    echo $set_SO
+    
+    ############################################
+    cd $directorio/$nombre_maquina
     vagrant init $set_SO -m
+
+    ##  Realizaremos modificaciones en el fichero Vagrantfile con el comando sed
+    #sed -i "/config.vm.box/a\  config.vm.network \"private_network\", type: \"dhcp\", virtualbox__intnet: \"LAN\"" Vagrantfile 
+    sed -i "/config.vm.box/a\  config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile
+
+  if [[ $set_SO != 'centos/7' || $set_SO != 'centos/6' ]]; then
+    sed -i "/private_network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = true\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n  SHELL\n  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/dharkros/ansible-playbook/ldap_cliente.yml\"\n  end"  Vagrantfile 
+  else
+    sed -i "/private_network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end"  Vagrantfile
+  fi
+  
+  grep -iw "$nombre_maquina" $directorio/.maquinas
     
-   
-    read -p 'Nombre de la maquina: ' nombre_maquinas
-    grep -iw "$nombre_maquinas" $directorio/.maquinas
-    
-    if [[ $? -eq 1 ]]; then
-        echo "$nombre_carpeta:$nombre_maquinas" >> $directorio/.maquinas
-    fi
-    vagrant up
-    
-    read -p 'Quieres conectar ahora a la maquina? ' conecssh
+  if [[ $? -eq 1 ]]; then
+        echo "$nombre_maquina:$nombre_maquina" >> $directorio/.maquinas
+  fi
+  
+  ## Inica la estancia
+  vagrant up
+  #clear 
+  sleep 20
+  ## Muestra la IP 
+  echo  "La IP de la maquina es:"
+  vagrant ssh -c 'ip a'
+
+  read -p 'Quieres conectar ahora a la maquina? ' conecssh
     conecssh=`echo $conecssh | tr [:upper:] [:lower:]`
    if [[ $conecssh == "y" || $conecssh == "yes" || $conecssh == "s" || $conecssh == "si" ]]; then
         vagrant ssh
    fi
-    cd $dir_actual
+  cd $dir_actual
 }
 
 ## Seleciona el sistema operativo que usara la maquina virtual.
