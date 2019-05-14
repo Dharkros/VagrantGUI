@@ -6,12 +6,14 @@ dir_actual=`pwd`
 
 # Functiones
 
+## Esta funcion que introduce una pausa hata pulsar la tecla "Enter".
 function Pausa(){
 	echo ""
 	read -p 'Pulse una tecla "Enter" para continuar...'
 	clear
 }
 
+## Verifica si el directorio existe y en caso que no lo crea.
 function check_d(){
 
 	if ! [[ -d $directorio ]]; then
@@ -19,6 +21,7 @@ function check_d(){
 	fi
 }
 
+## Verifica si el ficero existe y en caso que no lo crea.
 function check_f(){
 
 	if ! [[ -f $directorio/$1 ]]; then
@@ -26,6 +29,7 @@ function check_f(){
 	fi
 }
 
+## Cambia el nombre de una maquina virtual.
 function cambiar_nombre_mkv(){
 
     cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
@@ -48,9 +52,10 @@ function cambiar_nombre_mkv(){
    cd $dir_actual
 }
 
-
+## Crea una maquina virtual.
 function Crear_mkv(){
     check_d
+    check_f .maquinas
     read -p 'Nombre de la carpeta: ' nombre_carpeta
 
     while [[ -d $directorio/$nombre_carpeta ]]; do
@@ -81,6 +86,7 @@ function Crear_mkv(){
     cd $dir_actual
 }
 
+## Seleciona el sistema operativo que usara la maquina virtual.
 function Add_so(){
     echo "1. Ubuntu 18.04 (64/32 bits)"
     echo "2. Ubuntu 16.04 (64/32 bits)"
@@ -89,7 +95,7 @@ function Add_so(){
     echo "5. Centos 6"
     #echo "6. Windows 10 (64 bits)"
     read -p 'Introduce una opcion: ' opcion_add
-    if [[ $option -lt 4 ]]; then
+    if [[ $opcion_add -lt 4 ]]; then
     	read -p '64 bits o 32 bits: ' arquitertura
     fi
     while [[ $arquitertura -ne '32' && $arquitertura -ne '64' && $opcion_add -lt 4 ]]; do
@@ -116,6 +122,7 @@ function Add_so(){
 
 }
 
+## Elemina maquina virtual.
 function Rm_mkv(){
    cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
    read -p 'Seleciones cual borrar: ' select_drop
@@ -132,6 +139,7 @@ function Rm_mkv(){
    fi   
 } 
 
+## Edita caracteristica de la maquina virtual.
 function Edit_mkv(){
     echo "1. Cambiar Nombre"
     echo "2. Direccion IP"
@@ -148,7 +156,7 @@ function Edit_mkv(){
             ;;
    esac
 }
-
+## Conecta mediante ssh a la maquina virtual.
 function Cx_mkv(){
    cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
    read -p 'Seleciones la maquina a conectar: ' select_ssh
@@ -159,20 +167,21 @@ function Cx_mkv(){
    cd $dir_actual
 }
 
+## Menú maid
+
 while [[ true ]]; do
     echo "1. Crear Maquina"
     echo "2. Borrar Maquina"
     echo "3. Conectar a MKV"
     echo "4. Editar Maquina"
     echo "5. Salir"
-    #echo "5. CONTROLADOR DE INSTANTANEAS"
-    #echo "6. Aprovicionar MKV"
-    #echo "7. Salir"
+    #echo "6. CONTROLADOR DE INSTANTANEAS"
+    #echo "7. Aprovicionar MKV"
+
     read -p 'Introduce una opcion: ' opcion
     case $opcion in
     1)
         clear
-        check_f .maquinas
         Crear_mkv
         Pausa;;
 
