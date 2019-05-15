@@ -63,45 +63,46 @@ function Crear_mkv(){
         read -p 'Ya existe una maquina con este nombre, porfavor elija otro nombre: ' nombre_maquina    
    done
 
-    mkdir $directorio/$nombre_maquina
+   mkdir $directorio/$nombre_maquina
     
-    ## Llamamos a la funcion add_so para selecionar sistema operativo 
-    Add_so
+   ## Llamamos a la funcion add_so para selecionar sistema operativo 
+   Add_so
     
-    ############################################
-    cd $directorio/$nombre_maquina
-    vagrant init $set_SO -m
+   cd $directorio/$nombre_maquina
+   
+   ## Creacion del fichero vagrant
+   vagrant init $set_SO -m
 
-    ##  Realizaremos modificaciones en el fichero Vagrantfile con el comando sed
-    #sed -i "/config.vm.box/a\  config.vm.network \"private_network\", type: \"dhcp\", virtualbox__intnet: \"LAN\"" Vagrantfile 
-    sed -i "/config.vm.box/a\  config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile
+   ##  Realizaremos modificaciones en el fichero Vagrantfile con el comando sed
+   
+   sed -i "/config.vm.box/a\  config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile
 
-  if [[ $set_SO != 'centos/7' || $set_SO != 'centos/6' ]]; then
-    sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = true\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n  SHELL\n  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/dharkros/ansible-playbook/ldap_cliente.yml\"\n  end"  Vagrantfile 
-  else
-    sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end"  Vagrantfile
-  fi
+   if [[ $set_SO != 'centos/7' || $set_SO != 'centos/6' ]]; then
+     #EL BLOQUE DE ANSIBLE SE DEBERIA DE INICIAR EN APARTADO APROVISIONAR
+     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = true\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config/n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL\n  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/$(whoami)/ansible-playbook/ldap_cliente.yml\"\n  end"  Vagrantfile 
+   else
+      sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config/n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config/n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
+   fi
   
-  grep -iw "$nombre_maquina" $directorio/.maquinas
+   grep -iw "$nombre_maquina" $directorio/.maquinas
     
-  if [[ $? -eq 1 ]]; then
+   if [[ $? -eq 1 ]]; then
         echo "$nombre_maquina:$nombre_maquina" >> $directorio/.maquinas
-  fi
+   fi
   
-  ## Inica la estancia
-  vagrant up
-  #clear 
-  sleep 20
-  ## Muestra la IP 
-  echo  "La IP de la maquina es:"
-  vagrant ssh -c 'ip a'
-
-  read -p 'Quieres conectar ahora a la maquina? ' conecssh
-    conecssh=`echo $conecssh | tr [:upper:] [:lower:]`
+   ## Inica la estancia
+   vagrant up
+   clear   
+   ## Muestra la IP 
+   echo  "La IP de la maquina es:"
+   vagrant ssh -c 'ip a'
+   Pausa
+   read -p 'Quieres conectar ahora a la maquina? ' conecssh
+     conecssh=`echo $conecssh | tr [:upper:] [:lower:]`
    if [[ $conecssh == "y" || $conecssh == "yes" || $conecssh == "s" || $conecssh == "si" ]]; then
         vagrant ssh
    fi
-  cd $dir_actual
+   cd $dir_actual
 }
 
 ## Seleciona el sistema operativo que usara la maquina virtual.
@@ -131,8 +132,6 @@ function Add_so(){
             set_SO="centos/7";;
         5 )
             set_SO="centos/6";;
-        #6 )
-         #   set_SO="dharkros/windows10";;
         *)
             ;;
 
@@ -192,9 +191,10 @@ while [[ true ]]; do
     echo "2. Borrar Maquina"
     echo "3. Conectar a MKV"
     echo "4. Editar Maquina"
-    echo "5. Salir"
-    #echo "6. CONTROLADOR DE INSTANTANEAS"
-    #echo "7. Aprovicionar MKV"
+    echo "5. Controlador de instantaneas"
+    echo "6. Aprovicionar MKV"
+    echo "7. Apagar/reiniciar/suspender"
+    echo "8. Salir"
 
     read -p 'Introduce una opcion: ' opcion
     case $opcion in
@@ -217,7 +217,7 @@ while [[ true ]]; do
         Edit_mkv
         Pausa;;
 
-    5)
+    8)
         exit
         clear;;
     remove)
