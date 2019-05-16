@@ -1,4 +1,8 @@
 #!/bin/bash
+#cambiar nombre no lo cambia a la hora de llamada
+#arreglar direciones con seperaraciones al crear MKV
+#reiniciar y aprovicionar directamente
+
 clear
 # Variables
 directorio=~/MVV
@@ -63,12 +67,12 @@ function Crear_mkv(){
         read -p 'Ya existe una maquina con este nombre, porfavor elija otro nombre: ' nombre_maquina    
    done
 
-   mkdir $directorio/$nombre_maquina
+   mkdir "$directorio"/"$nombre_maquina"
     
    ## Llamamos a la funcion add_so para selecionar sistema operativo 
    Add_so
     
-   cd $directorio/$nombre_maquina
+   cd "$directorio"/"$nombre_maquina"
    
    ## Creacion del fichero vagrant
    vagrant init $set_SO -m
@@ -78,12 +82,12 @@ function Crear_mkv(){
    sed -i "/config.vm.box/a\  config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile
    ## POR ALGUNA RAZON NO PUEDO PONER  2 IF CON || EN UN SOLO IF
    if [[ "$set_SO" == "centos/7" ]];then
-        sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config/n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
+        sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
    elif [[ "$set_SO" == "centos/6" ]]; then
   ## EL BLOQUE DE ANSIBLE SE DEBERIA DE INICIAR EN APARTADO APROVISIONAR
-     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config/n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
+     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
    else
-     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = true\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL\n  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/$(whoami)/ansible-playbook/ldap_cliente.yml\"\n  end"  Vagrantfile 
+     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile 
    fi
   
    grep -iw "$nombre_maquina" $directorio/.maquinas
@@ -161,11 +165,11 @@ function Rm_mkv(){
 ## Edita caracteristica de la maquina virtual.
 function Edit_mkv(){
     echo "1. Cambiar Nombre"
-    echo "2. Direccion IP"
-    echo "3. Adaptador De  Red"
-    echo "4. USO De RAM"
-    echo "5. USO De CPUS"
-    echo "6. Añadir HDD"
+#    echo "2. Direccion IP"
+#    echo "3. Adaptador De  Red"
+#    echo "4. USO De RAM"
+#    echo "5. USO De CPUS"
+#    echo "6. Añadir HDD"
     read -p 'Introduce una opcion: ' opcion_editar
     clear
    case  $opcion_editar in
@@ -246,6 +250,55 @@ function c_snapshot(){
    cd $dir_actual
 }
 
+function provicion(){
+if [[ "$git" == "true" ]];then
+	cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
+	read -p 'Seleciones una maquina: ' select_maquina_provicion
+   	cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_maquina_provicion p" | awk -F":" '{print $1}')
+   	clear
+   	echo "1. Ldap client (Solo Ubuntu)"
+   	echo "2. Apache (solo Ubuntu)"   
+   	echo "3. REINICIAR Y APROVISIONAR"   
+   	read -p 'Seleciona que provicion decea hace: ' set_provicion
+
+   	case $set_provicion in
+	   1 )
+		   sed -i 's/vb.gui = false/vb.gui = true/' Vagrantfile
+		   sed -i "/\ SHELL/a\  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/$(whoami)/ansible-playbook/ldap_cliente.yml\"\n  end" Vagrantfile;;
+	   3 )
+		   vagrant reload --provision;;
+	   * )
+	   	;;
+   	esac
+   	cd $dir_actual
+   else
+	   echo "El directorio ansible-playbook no existe"
+   fi
+   
+}
+
+function sync_aprovicion(){
+git=false
+
+if ! [[ -d ~/ansible-playbook ]];then
+	which git
+	if [[ "$?" != 0 ]];then
+		echo "git no esta instalado, porfavor instale git para realizar esta accion"
+        else
+		cd ~
+		git clone https://github.com/Dharkros/ansible-playbook.git
+		cd $dir_actual
+		git=true
+	fi
+else
+	cd ~/ansible-playbook
+	git pull
+	cd $dir_actual
+        git=true
+
+fi
+}
+
 
 ## Menú maid
 
@@ -285,7 +338,8 @@ while [[ true ]]; do
         Pausa;;
     6)
         clear
-        null
+        sync_aprovicion
+	provicion
         Pausa;;
     7)
         clear
@@ -296,7 +350,7 @@ while [[ true ]]; do
         exit
         clear;;
     remove)
-          rm -rf ~/MVV/*;;
+          rm -rf ~/MVV;;
     *)
         ;;
 
