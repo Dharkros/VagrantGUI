@@ -1,14 +1,9 @@
 #!/bin/bash
-#cambiar nombre no lo cambia a la hora de llamada
-#arreglar direciones con seperaraciones al crear MKV
-#reiniciar y aprovicionar directamente
 
 clear
 # Variables
-directorio=~/MVV
+directorio=~/MKV
 dir_actual=`pwd`
-
-
 
 ## Esta funcion que introduce una pausa hata pulsar la tecla "Enter".
 function Pausa(){
@@ -20,29 +15,29 @@ function Pausa(){
 ## Verifica si el directorio existe y en caso que no lo crea.
 function check_d(){
 
-	if ! [[ -d $directorio ]]; then
-		mkdir $directorio
+	if ! [[ -d "$directorio" ]]; then
+		mkdir "$directorio"
 	fi
 }
 
 ## Verifica si el ficero existe y en caso que no lo crea.
 function check_f(){
 
-	if ! [[ -f $directorio/$1 ]]; then
-		touch $directorio/$1
+	if ! [[ -f "$directorio"/$1 ]]; then
+		touch "$directorio"/$1
 	fi
 }
 
 ## Cambia el nombre de una maquina virtual.
 function cambiar_nombre_mkv(){
 
-    cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
+    cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
     read -p 'Seleciones la maquina a modificar: ' select_nombre
     clear
     echo 'Cual sera el nuevo nombre?'
     read -p 'Nombre: ' new_name
 
-    cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}')
+    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}')
     grep -iw "vb.name =" Vagrantfile > /dev/null 2>&1
    
     if [[ $? -ne 0 ]]; then
@@ -53,7 +48,9 @@ function cambiar_nombre_mkv(){
         sed -i "s/vb\.name = \".*/vb\.name = \"$new_name\"/" Vagrantfile
     fi
     vagrant reload
-    cd $dir_actual
+    mv "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}') "$directorio"/$new_name
+    sed -i "s/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}'):/$new_name:/" "$directorio"/.maquinas
+    cd "$dir_actual"
 }
 
 ## Crea una maquina virtual.
@@ -62,7 +59,7 @@ function Crear_mkv(){
     check_f .maquinas
     read -p 'Nombre de la maquina: ' nombre_maquina
 
-   while [[ -d $directorio/$nombre_maquina ]]; do
+   while [[ -d "$directorio"/"$nombre_maquina" ]]; do
         clear
         read -p 'Ya existe una maquina con este nombre, porfavor elija otro nombre: ' nombre_maquina    
    done
@@ -77,26 +74,26 @@ function Crear_mkv(){
    ## Creacion del fichero vagrant
    vagrant init $set_SO -m
 
-   ##  Realizaremos modificaciones en el fichero Vagrantfile con el comando sed
+   ##  Realizaremos modificaciones en el fichero Vagrantfile con el comando sed para crear un fichero basico depemdiendo de la familia del SO
    
    sed -i "/config.vm.box/a\  config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile
    ## POR ALGUNA RAZON NO PUEDO PONER  2 IF CON || EN UN SOLO IF
    if [[ "$set_SO" == "centos/7" ]];then
         sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
    elif [[ "$set_SO" == "centos/6" ]]; then
-  ## EL BLOQUE DE ANSIBLE SE DEBERIA DE INICIAR EN APARTADO APROVISIONAR
+ 
      sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
    else
      sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile 
    fi
   
-   grep -iw "$nombre_maquina" $directorio/.maquinas
+   grep -iw "$nombre_maquina" "$directorio"/.maquinas
     
    if [[ $? -eq 1 ]]; then
-        echo "$nombre_maquina:$nombre_maquina" >> $directorio/.maquinas
+        echo "$nombre_maquina:" >> "$directorio"/.maquinas
    fi
   
-   ## Inica la estancia
+   ## Inicia la estancia
    vagrant up
    clear   
    ## Muestra la IP 
@@ -108,7 +105,7 @@ function Crear_mkv(){
    if [[ $conecssh == "y" || $conecssh == "yes" || $conecssh == "s" || $conecssh == "si" ]]; then
         vagrant ssh
    fi
-   cd $dir_actual
+   cd "$dir_actual"
 }
 
 ## Seleciona el sistema operativo que usara la maquina virtual.
@@ -147,17 +144,17 @@ function Add_so(){
 
 ## Elemina maquina virtual.
 function Rm_mkv(){
-   cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
+   cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
    read -p 'Seleciones cual borrar: ' select_drop
-   echo "Se va a eliminar $(cat $directorio/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $2}')"
+   echo "Se va a eliminar $(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')"
    read -p '¿Deseas continuar? (y/n) ' resp
    resp=`echo $resp | tr [:upper:] [:lower:]`
    if [[ $resp == "y" || $resp == "yes" || $resp == "s" || $resp == "si" ]]; then
-      cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
+      cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
       vagrant destroy -f
-      cd $dir_actual
-      rm -r $directorio/$(cat $directorio/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
-      cat $directorio/.maquinas | sed -i "$select_drop d" $directorio/.maquinas
+      cd "$dir_actual"
+      rm -r "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
+      cat "$directorio"/.maquinas | sed -i "$select_drop d" ""$directorio""/.maquinas
       sleep 2s
    fi   
 } 
@@ -181,13 +178,13 @@ function Edit_mkv(){
 }
 ## Conecta mediante ssh a la maquina virtual.
 function Cx_mkv(){
-   cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
+   cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
    read -p 'Seleciones la maquina a conectar: ' select_ssh
    
-   cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_ssh p" | awk -F":" '{print $1}')
+   cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_ssh p" | awk -F":" '{print $1}')
    clear
    vagrant ssh
-   cd $dir_actual
+   cd "$dir_actual"
 }
 
 ## Controla las sentencia Apagar/reiniciar/suspender
@@ -198,10 +195,10 @@ function c_init(){
    
    read -p 'Elige una opcion: ' comando_init
 
-   cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
+   cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
    read -p 'Seleciones una maquina: ' select_maquina_init
    
-   cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_maquina_init p" | awk -F":" '{print $1}')
+   cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_maquina_init p" | awk -F":" '{print $1}')
    clear
    case $comando_init in
      1 )
@@ -213,14 +210,15 @@ function c_init(){
      * )
        c_init;;
    esac
-   cd $dir_actual
+   cd "$dir_actual"
 }
 
+## Controla la administracion de instantaneas
 function c_snapshot(){
 
-   cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
+   cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
    read -p 'Seleciones una maquina: ' select_maquina_snapshot
-   cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_maquina_snapshot p" | awk -F":" '{print $1}')
+   cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_maquina_snapshot p" | awk -F":" '{print $1}')
    clear
    echo "1. Listar snapshot"
    echo "2. Crear snapshot"
@@ -247,37 +245,58 @@ function c_snapshot(){
      * )
        c_snapshot;;
    esac
-   cd $dir_actual
+   cd "$dir_actual"
 }
 
-function provicion(){
-if [[ "$git" == "true" ]];then
-	cat $directorio/.maquinas | awk -F":" '{print $2}' | nl
-	read -p 'Seleciones una maquina: ' select_maquina_provicion
-   	cd $directorio/$(cat $directorio/.maquinas | sed -n "$select_maquina_provicion p" | awk -F":" '{print $1}')
-   	clear
-   	echo "1. Ldap client (Solo Ubuntu)"
-   	echo "2. Apache (solo Ubuntu)"   
-   	echo "3. REINICIAR Y APROVISIONAR"   
-   	read -p 'Seleciona que provicion decea hace: ' set_provicion
+function provision(){
+    if [[ "$git" == "true" ]];then
+    	  cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
+    	  read -p 'Seleciones una maquina: ' select_maquina_provision
+       	cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_maquina_provision p" | awk -F":" '{print $1}')
+       	clear
+       	echo "1. LDAP client (Solo Ubuntu)"
+       	echo "2. Apache2 (solo Ubuntu)"   
+       	echo "3. REINICIAR Y APROVISIONAR"   
+       	read -p 'Seleciona que provision decea hace: ' set_provision
 
-   	case $set_provicion in
-	   1 )
-		   sed -i 's/vb.gui = false/vb.gui = true/' Vagrantfile
-		   sed -i "/\ SHELL/a\  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/$(whoami)/ansible-playbook/ldap_cliente.yml\"\n  end" Vagrantfile;;
-	   3 )
-		   vagrant reload --provision;;
-	   * )
-	   	;;
-   	esac
-   	cd $dir_actual
-   else
-	   echo "El directorio ansible-playbook no existe"
-   fi
+       	case $set_provision in
+    	      1 )
+                    grep -w "ldap_cliente.yml" Vagrantfile > /dev/null 2>&1
+
+                    if [[ $? -eq 0 ]]; then
+                       clear
+                       echo "Ya esta aprovicionado con LDAP client"
+                    else
+                       sed -i 's/vb.gui = false/vb.gui = true/' Vagrantfile
+        		           sed -i "/\ SHELL/a\  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/$(whoami)/ansible-playbook/ldap_cliente.yml\"\n  end" Vagrantfile
+                       clear
+                       Reload_provision
+                    fi;;
+            2 )
+                    grep -w "ldap_cliente.yml" Vagrantfile > /dev/null 2>&1
+
+                    if [[ $? -eq 0 ]]; then
+                       clear
+                       echo "Ya esta aprovicionado con Apache2"
+                    else
+                       sed -i "/\ SHELL/a\  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/$(whoami)/ansible-playbook/install_apache2.yml\"\n  end" Vagrantfile
+                       clear
+                       Reload_provision
+                    fi;;
+
+    	      3 )
+    		           vagrant reload --provision;;
+    	       * )
+    	   	         ;;
+       	esac
+   	    cd "$dir_actual"
+    else
+	      echo "El directorio ansible-playbook no existe"
+    fi
    
 }
 
-function sync_aprovicion(){
+function sync_provision(){
 git=false
 
 if ! [[ -d ~/ansible-playbook ]];then
@@ -287,16 +306,24 @@ if ! [[ -d ~/ansible-playbook ]];then
         else
 		cd ~
 		git clone https://github.com/Dharkros/ansible-playbook.git
-		cd $dir_actual
+		cd "$dir_actual"
 		git=true
 	fi
 else
 	cd ~/ansible-playbook
 	git pull
-	cd $dir_actual
+	cd "$dir_actual"
         git=true
 
 fi
+}
+
+function Reload_provision(){
+  read -p 'Quieres reiniciar para aprovicionar la maquina ahora? ' reload_now
+     reload_now=`echo $reload_now | tr [:upper:] [:lower:]`
+   if [[ $reload_now == "y" || $reload_now == "yes" || $reload_now == "s" || $reload_now == "si" ]]; then
+        vagrant reload --provision
+   fi
 }
 
 
@@ -308,7 +335,7 @@ while [[ true ]]; do
     echo "3. Conectar a MKV"
     echo "4. Editar Maquina"
     echo "5. Controlador de snapchot"
-    echo "6. Aprovicionar MKV"
+    echo "6. Aprovisionar MKV"
     echo "7. Apagar/reiniciar/suspender"
     echo "8. Salir"
 
@@ -338,8 +365,8 @@ while [[ true ]]; do
         Pausa;;
     6)
         clear
-        sync_aprovicion
-	provicion
+        sync_provision
+	      provision
         Pausa;;
     7)
         clear
@@ -350,7 +377,7 @@ while [[ true ]]; do
         exit
         clear;;
     remove)
-          rm -rf ~/MVV;;
+          rm -rf ~/MKV;;
     *)
         ;;
 
