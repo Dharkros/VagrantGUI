@@ -1,10 +1,27 @@
 #!/bin/bash
-
 clear
 # Variables
 directorio=~/MKV
 dir_actual=`pwd`
 
+## Instala las dependencias
+
+function Dependencias(){
+  which $1  > /dev/null 2>&1
+  if [[ $? -ne 0 ]]; then
+    instalar="n"
+    echo "$1 no esta instalado deseas instalarlo"
+    read -p 'Respuesta(y/n): ' instalar
+    if [[ "$instalar" == "y" ]]; then
+      sudo apt install $1
+    else
+      clear
+      echo "Sin $1 VagrantGUI no funciona, porfavor instalelo para utilizarlo"
+      exit
+    fi
+
+  fi
+}
 ## Esta funcion que introduce una pausa hata pulsar la tecla "Enter".
 function Pausa(){
 	echo ""
@@ -273,7 +290,7 @@ function provision(){
                        Reload_provision
                     fi;;
             2 )
-                    grep -w "ldap_cliente.yml" Vagrantfile > /dev/null 2>&1
+                    grep -w "install_apache2.yml" Vagrantfile > /dev/null 2>&1
 
                     if [[ $? -eq 0 ]]; then
                        clear
@@ -328,6 +345,11 @@ function Reload_provision(){
 
 
 ## Menú maid
+
+Dependencias vagrant
+Dependencias virtualbox
+Dependencias ansible
+clear
 
 while [[ true ]]; do
     echo "1. Crear Maquina"
