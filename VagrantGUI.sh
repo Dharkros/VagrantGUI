@@ -53,6 +53,7 @@ function cambiar_nombre_mkv(){
     clear
     echo 'Cual sera el nuevo nombre?'
     read -p 'Nombre: ' new_name
+    new_name=`echo "$new_name" | tr -s '[[:space:]]' '_' | sed 's/_*$//'`
 
     cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}')
     grep -iw "vb.name =" Vagrantfile > /dev/null 2>&1
@@ -74,8 +75,9 @@ function cambiar_nombre_mkv(){
 function Crear_mkv(){
     check_d
     check_f .maquinas
-    read -p 'Nombre de la maquina: ' nombre_maquina
 
+    read -p 'Nombre de la maquina: ' nombre_maquina
+    nombre_maquina=`echo "$nombre_maquina" | tr -s '[[:space:]]' '_' | sed 's/_*$//'`
    while [[ -d "$directorio"/"$nombre_maquina" ]]; do
         clear
         read -p 'Ya existe una maquina con este nombre, porfavor elija otro nombre: ' nombre_maquina    
@@ -99,7 +101,7 @@ function Crear_mkv(){
         sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
    elif [[ "$set_SO" == "centos/6" ]]; then
  
-     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
+     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     service sshd restart\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
    else
      sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile 
    fi
@@ -132,7 +134,6 @@ function Add_so(){
     echo "3. Ubuntu 14.04 (64/32 bits)"
     echo "4. Centos 7"
     echo "5. Centos 6"
-    #echo "6. Windows 10 (64 bits)"
     read -p 'Introduce una opcion: ' opcion_add
     if [[ $opcion_add -lt 4 ]]; then
     	read -p '64 bits o 32 bits: ' arquitertura
@@ -153,7 +154,10 @@ function Add_so(){
         5 )
             set_SO="centos/6";;
         *)
-            ;;
+            clear
+            echo "Debes de elegir uno de los siguiente S.O:"
+            echo ""
+            Add_so;;
 
     esac
 
@@ -162,18 +166,21 @@ function Add_so(){
 ## Elemina maquina virtual.
 function Rm_mkv(){
    cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-   read -p 'Seleciones cual borrar: ' select_drop
-   echo "Se va a eliminar $(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')"
-   read -p '¿Deseas continuar? (y/n) ' resp
-   resp=`echo $resp | tr [:upper:] [:lower:]`
-   if [[ $resp == "y" || $resp == "yes" || $resp == "s" || $resp == "si" ]]; then
-      cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
-      vagrant destroy -f
-      cd "$dir_actual"
-      rm -r "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
-      cat "$directorio"/.maquinas | sed -i "$select_drop d" ""$directorio""/.maquinas
-      sleep 2s
-   fi   
+   echo "     salir"
+   read -p 'Seleciones cual borrar o "salir": ' select_drop
+   if ! [[ $select_drop = 'salir' || -z $select_drop ]]; then
+        echo "Se va a eliminar $(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')"
+        read -p '¿Deseas continuar? (y/n) ' resp
+        resp=`echo $resp | tr [:upper:] [:lower:]`
+        if [[ $resp == "y" || $resp == "yes" || $resp == "s" || $resp == "si" ]]; then
+            cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
+            vagrant destroy -f
+            cd "$dir_actual"
+            rm -r "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
+            cat "$directorio"/.maquinas | sed -i "$select_drop d" ""$directorio""/.maquinas
+            sleep 2s
+        fi   
+   fi
 } 
 
 ## Edita caracteristica de la maquina virtual.
@@ -184,11 +191,14 @@ function Edit_mkv(){
 #    echo "4. USO De RAM"
 #    echo "5. USO De CPUS"
 #    echo "6. Añadir HDD"
+    echo "salir"
     read -p 'Introduce una opcion: ' opcion_editar
     clear
    case  $opcion_editar in
         1) 
             cambiar_nombre_mkv;;
+        salir)
+          ;;
         *) 
             ;;
    esac
@@ -209,6 +219,7 @@ function c_init(){
    echo "1. Apagar"
    echo "2. Reinicia"
    echo "3. Suspender"
+   echo "salir"
    
    read -p 'Elige una opcion: ' comando_init
 
@@ -224,6 +235,8 @@ function c_init(){
        vagrant reload;;
      3 )
        vagrant suspend;;
+    salir)
+      ;;
      * )
        c_init;;
    esac
@@ -241,6 +254,7 @@ function c_snapshot(){
    echo "2. Crear snapshot"
    echo "3. Restaura snapshot"
    echo "4. Eliminar snapshot"
+   echo "salir"
 
    read -p 'Elige una opcion: ' comando_snapshot
    
@@ -259,6 +273,8 @@ function c_snapshot(){
        vagrant snapshot list
        read -p 'Nombre snapshot: ' name_snapshot_delete
        vagrant snapshot  delete $name_snapshot_delete;;
+     salir) 
+        ;;
      * )
        c_snapshot;;
    esac
@@ -273,7 +289,8 @@ function provision(){
        	clear
        	echo "1. LDAP client (Solo Ubuntu)"
        	echo "2. Apache2 (solo Ubuntu)"   
-       	echo "3. REINICIAR Y APROVISIONAR"   
+       	echo "3. REINICIAR Y APROVISIONAR" 
+        echo "salir"
        	read -p 'Seleciona que provision decea hace: ' set_provision
 
        	case $set_provision in
@@ -303,7 +320,9 @@ function provision(){
 
     	      3 )
     		           vagrant reload --provision;;
-    	       * )
+    	      salir)
+              ;;
+             * )
     	   	         ;;
        	esac
    	    cd "$dir_actual"
@@ -356,7 +375,7 @@ while [[ true ]]; do
     echo "2. Borrar Maquina"
     echo "3. Conectar a MKV"
     echo "4. Editar Maquina"
-    echo "5. Controlador de snapchot"
+    echo "5. Controlador de snapshot"
     echo "6. Aprovisionar MKV"
     echo "7. Apagar/reiniciar/suspender"
     echo "8. Salir"
@@ -396,8 +415,11 @@ while [[ true ]]; do
         Pausa;;
 
     8)
-        exit
-        clear;;
+        clear
+	echo "Adios!!!"
+	sleep 2
+	clear
+	exit;;
     remove)
           rm -rf ~/MKV;;
     *)
