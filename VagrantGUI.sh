@@ -8,7 +8,7 @@ dir_actual=`pwd`
 
 function Dependencias(){
   which $1  > /dev/null 2>&1
-  if [[ $? -ne 0 ]]; then
+  if [[ $? -ne 0 && $1 != "notify-send" ]]; then
     instalar="n"
     echo "$1 no esta instalado deseas instalarlo"
     read -p 'Respuesta(y/n): ' instalar
@@ -21,6 +21,12 @@ function Dependencias(){
     fi
 
   fi
+
+  which $1  > /dev/null 2>&1
+  if [[ $? -ne 0 && $1 == "notify-send" ]]; then
+    Dependencias libnotify-bin
+  fi
+  notify-send Bien: "DEPENDENCIAS INSTALADAS" -t 5000
 }
 ## Esta funcion que introduce una pausa hata pulsar la tecla "Enter".
 function Pausa(){
@@ -69,6 +75,7 @@ function cambiar_nombre_mkv(){
     mv "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}') "$directorio"/$new_name
     sed -i "s/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}'):/$new_name:/" "$directorio"/.maquinas
     cd "$dir_actual"
+    notify-send Bien: "NOMBRE ACTUALIZADO" -t 5000
 }
 
 ## Crea una maquina virtual.
@@ -114,7 +121,12 @@ function Crear_mkv(){
   
    ## Inicia la estancia
    vagrant up
+   
+   # Notificacion
+   
+   notify-send Bien: "MAQUINA \"$(echo "$nombre_maquina" | tr [:lower:] [:upper:])\" EN FUNCIONAMIENTO!" -t 5000
    clear   
+   
    ## Muestra la IP 
    echo  "La IP de la maquina es:"
    vagrant ssh -c 'ip a'
@@ -211,6 +223,10 @@ function Cx_mkv(){
    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_ssh p" | awk -F":" '{print $1}')
    clear
    vagrant ssh
+
+   if [[ $? -ne 0 ]];then
+notify-send Error "No se puede estrablecer la conexion. Puede que la maquina no este en funcionamiento" -t 10000
+   fi
    cd "$dir_actual"
 }
 
@@ -320,6 +336,7 @@ function provision(){
 
     	      3 )
     		           vagrant reload --provision;;
+                   
     	      salir)
               ;;
              * )
@@ -363,13 +380,15 @@ function Reload_provision(){
 }
 
 
-## Menú maid
+
+## Instalacion de dependencias
 
 Dependencias vagrant
 Dependencias virtualbox
 Dependencias ansible
+Dependencias notify-send
 clear
-
+## Menú maid
 while [[ true ]]; do
     echo "1. Crear Maquina"
     echo "2. Borrar Maquina"

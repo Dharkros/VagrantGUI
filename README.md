@@ -5,3 +5,4 @@ Script que automatiza las tareas basicas de vagrant, y añade la funcion de apro
 - VirtualBox
 - Ansible
 - Git
+- notify-osd
