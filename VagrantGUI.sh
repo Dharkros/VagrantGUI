@@ -218,6 +218,7 @@ function Rm_mkv(){
             cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
             vagrant destroy -f > /dev/null 2>&1
             cd "$dir_actual"
+	    rm -r "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
             cat "$directorio"/.maquinas | sed -i "$select_drop d" ""$directorio""/.maquinas
             sleep 2
         fi   
