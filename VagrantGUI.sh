@@ -53,7 +53,7 @@ function check_f(){
 
 ## Cambia el nombre de una maquina virtual.
 function cambiar_nombre_mkv(){
-
+    clear
     cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
 
     read -p 'Seleciones la maquina a modificar: ' select_nombre
@@ -63,10 +63,6 @@ function cambiar_nombre_mkv(){
       --text="Escriba el nuevo nombre:" \
       --entry-text "Nuevo nombre"`                        
     
-    
-    
-    #echo 'Cual sera el nuevo nombre?'
-    #read -p 'Nombre: ' new_name
     new_name=`echo "$new_name" | tr -s '[[:space:]]' '_' | sed 's/_*$//'`
 
     cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}')
@@ -86,41 +82,88 @@ function cambiar_nombre_mkv(){
     notify-send Bien: "NOMBRE ACTUALIZADO" -t 5000
 }
 
+## Modifica la opciones de MEMORIA
+
 function Asignar_ram(){
-   
+    clear
    	cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
    	echo "     salir"
 
   	read -p 'Seleciones una maquina": ' select_ram
 
-        cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_ram p" | awk -F":" '{print $1}')
+    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_ram p" | awk -F":" '{print $1}')
 
-	TotalRam=`cat /proc/meminfo | head -n1 | awk '{print $2/1024}' | awk -F"." '{print $1}'`
+	  TotalRam=`cat /proc/meminfo | head -n1 | awk '{print $2/1024}' | awk -F"." '{print $1}'`
 
-	cambiar_ram=`zenity --scale --text="Selecione la cantidad de memoria RAM." --value=1024 --max-value=$TotalRam --min-value=512`
-	sed -i "s/vb\.memory = \".*/vb\.memory = \"$cambiar_ram\"/" Vagrantfile
+	  cambiar_ram=`zenity --scale --text="Selecione la cantidad de memoria RAM." --value=1024 --max-value=$TotalRam --min-value=512`
+	  sed -i "s/vb\.memory = \".*/vb\.memory = \"$cambiar_ram\"/" Vagrantfile
 	
-	cd "$dir_actual"
+	  cd "$dir_actual"
 }
 
+##  Modifica la opciones de CPUS
+
 function Asignar_cpus(){
-   
+    clear
    	cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
    	echo "     salir"
 
   	read -p 'Seleciones una maquina": ' select_Cpu
 
-        cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_Cpu p" | awk -F":" '{print $1}')
+    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_Cpu p" | awk -F":" '{print $1}')
 
-	TotalCpu=`cat /proc/cpuinfo | grep "cpu cores" | uniq | awk '{print $4}'`
+	  TotalCpu=`cat /proc/cpuinfo | grep "cpu cores" | uniq | awk '{print $4}'`
 
-	cambiar_Cpu=`zenity --scale --text="Selecione la cantidad de CPUs." --value=1 --max-value=$TotalCpu --min-value=1`
-	sed -i "s/vb\.cpus = \".*/vb\.cpus = \"$cambiar_Cpu\"/" Vagrantfile
+	  cambiar_Cpu=`zenity --scale --text="Selecione la cantidad de CPUs." --value=1 --max-value=$TotalCpu --min-value=1`
+	  sed -i "s/vb\.cpus = \".*/vb\.cpus = \"$cambiar_Cpu\"/" Vagrantfile
 	
-	cd "$dir_actual"
+	  cd "$dir_actual"
 }
 
+
+## Modifica la opciones de red
+
+function Asignar_red(){
+    clear
+   	cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
+   	echo "     salir"
+
+  	read -p 'Seleciones una maquina": ' select_red
+
+    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_red p" | awk -F":" '{print $1}')
+
+
+## Introducir IP
+
+    read -p 'DHCP/IP: ' new_ip
+
+    new_ip=`echo $new_ip | tr -s [[:upper:]] [[:lower:]]`
+
+    if [[ $new_ip == "ip" ]];then
+        grep "config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile > /dev/null 2>&1
+
+        if [[ $? -eq 0 ]];then
+
+            cambio_ip=`zenity --entry \
+              --title="Nueva IP" \            
+              --text="Escriba la nueva IP:" \
+              --entry-text "Nuevo IP"`   
+
+            sed -i "s/config\.vm\.network\ \"public_network\",\ type:\ \"dhcp\"/config\.vm\.network\ \"public_network\",\ ip:\ \"$cambio_ip\"/" Vagrantfile
+        fi
+
+    elif [[ $new_ip == "dhcp" ]];then
+      sed  -i "s/config\.vm\.network\ \"public_network\",\ ip:\ \".*/config\.vm\.network\ \"public_network\",\ type:\ \"dhcp\"/" Vagrantfile
+    
+    else
+        notify-send Error "Red: Opion no valida" -t 10000
+    fi
+
+	  cd "$dir_actual"
+} 
+
 ## Crea una maquina virtual.
+
 function Crear_mkv(){
     check_d
     check_f .maquinas
@@ -132,18 +175,15 @@ function Crear_mkv(){
 	    --entry-text "Nombre de la nueva maquina"`                        
 
 
-
-
-
     nombre_maquina=`echo "$nombre_maquina" | tr -s '[[:space:]]' '_' | sed 's/_*$//'`
-   while [[ -d "$directorio"/"$nombre_maquina" ]]; do
+    while [[ -d "$directorio"/"$nombre_maquina" ]]; do
         clear
          nombre_maquina=`zenity --entry \
 	    --title="Crear maquina" \
 	    --text="Ya existe una maquina con este nombre, porfavor elija otro nombre:"\
 	    --entry-text "Nombre de la nueva maquina"`  
 
-   done
+    done
 
    mkdir "$directorio"/"$nombre_maquina"
     
@@ -175,10 +215,7 @@ function Crear_mkv(){
    fi
   
    ## Inicia la estancia
-   vagrant up |  zenity --progress --pulsate --auto-close\
-	   title="Actualizando los registros del sistema" \
-	   text="Rastreando los registros de los correos..." \
-	   percentage=0
+   vagrant up |  zenity --progress --pulsate --auto-close
 
 # Notificacion
    notify-send Bien: "MAQUINA \"$(echo "$nombre_maquina" | tr [:lower:] [:upper:])\" EN FUNCIONAMIENTO!" -t 5000
@@ -266,11 +303,10 @@ function Rm_mkv(){
 
 ## Edita caracteristica de la maquina virtual.
 function Edit_mkv(){
-    echo "1. Cambiar Nombre"
-#    echo "2. Direccion IP"
-#    echo "3. Adaptador De  Red"
-    echo "4. USO De RAM"
-    echo "5. USO De CPUS"
+    echo "1. CAMBIAR NOMBRE"
+    echo "2. DIRECCIÓN IP"
+    echo "3. USO DE RAM"
+    echo "4. USO DE CPUs"
 #    echo "6. Añadir HDD"
     echo "salir"
     read -p 'Introduce una opcion: ' opcion_editar
@@ -278,10 +314,12 @@ function Edit_mkv(){
    case  $opcion_editar in
         1) 
             cambiar_nombre_mkv;;
-	4)
-		Asignar_ram;;
-	5)
-		Asignar_cpus;;
+        2) 
+            Asignar_red;;
+	      3)
+		        Asignar_ram;;
+	      4)
+		        Asignar_cpus;;
         salir)
           ;;
         *) 
