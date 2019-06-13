@@ -6,3 +6,4 @@ Script que automatiza las tareas basicas de vagrant, y añade la funcion de apro
 - Ansible
 - Git
 - notify-osd
+- zenity

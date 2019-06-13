@@ -14,6 +14,7 @@ function Dependencias(){
     read -p 'Respuesta(y/n): ' instalar
     if [[ "$instalar" == "y" ]]; then
       sudo apt install $1
+      notify-send Bien: "DEPENDENCIAS INSTALADAS" -t 5000
     else
       clear
       echo "Sin $1 VagrantGUI no funciona, porfavor instalelo para utilizarlo"
@@ -26,7 +27,6 @@ function Dependencias(){
   if [[ $? -ne 0 && $1 == "notify-send" ]]; then
     Dependencias libnotify-bin
   fi
-  notify-send Bien: "DEPENDENCIAS INSTALADAS" -t 5000
 }
 ## Esta funcion que introduce una pausa hata pulsar la tecla "Enter".
 function Pausa(){
@@ -55,10 +55,18 @@ function check_f(){
 function cambiar_nombre_mkv(){
 
     cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
+
     read -p 'Seleciones la maquina a modificar: ' select_nombre
     clear
-    echo 'Cual sera el nuevo nombre?'
-    read -p 'Nombre: ' new_name
+    new_name=`zenity --entry \
+      --title="Nuevo nombre" \            
+      --text="Escriba el nuevo nombre:" \
+      --entry-text "Nuevo nombre"`                        
+    
+    
+    
+    #echo 'Cual sera el nuevo nombre?'
+    #read -p 'Nombre: ' new_name
     new_name=`echo "$new_name" | tr -s '[[:space:]]' '_' | sed 's/_*$//'`
 
     cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}')
@@ -83,11 +91,24 @@ function Crear_mkv(){
     check_d
     check_f .maquinas
 
-    read -p 'Nombre de la maquina: ' nombre_maquina
+
+    nombre_maquina=`zenity --entry \
+	    --title="Crear maquina" \
+	    --text="Escriba el nombre de la maquina:" \
+	    --entry-text "Nombre de la nueva maquina"`                        
+
+
+
+
+
     nombre_maquina=`echo "$nombre_maquina" | tr -s '[[:space:]]' '_' | sed 's/_*$//'`
    while [[ -d "$directorio"/"$nombre_maquina" ]]; do
         clear
-        read -p 'Ya existe una maquina con este nombre, porfavor elija otro nombre: ' nombre_maquina    
+         nombre_maquina=`zenity --entry \
+	    --title="Crear maquina" \
+	    --text="Ya existe una maquina con este nombre, porfavor elija otro nombre:"\
+	    --entry-text "Nombre de la nueva maquina"`  
+
    done
 
    mkdir "$directorio"/"$nombre_maquina"
@@ -120,10 +141,13 @@ function Crear_mkv(){
    fi
   
    ## Inicia la estancia
-   vagrant up
+   vagrant up | zenity --progress --auto-close\
+                  title="Actualizando los registros del sistema" \
    
-   # Notificacion
-   
+		  text="Rastreando los registros de los correos..." \n
+
+                  percentage=25
+# Notificacion
    notify-send Bien: "MAQUINA \"$(echo "$nombre_maquina" | tr [:lower:] [:upper:])\" EN FUNCIONAMIENTO!" -t 5000
    clear   
    
@@ -175,23 +199,36 @@ function Add_so(){
 
 }
 
-## Elemina maquina virtual.
+## Elimina maquina virtual.
 function Rm_mkv(){
    cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
    echo "     salir"
+   
+   
+   
+   
    read -p 'Seleciones cual borrar o "salir": ' select_drop
-   if ! [[ $select_drop = 'salir' || -z $select_drop ]]; then
+   
+   
+   if [[ $select_drop -le $(wc -l "$directorio"/.maquinas | awk '{print $1}') && $select_drop != "salir" ]];then
         echo "Se va a eliminar $(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')"
         read -p '¿Deseas continuar? (y/n) ' resp
         resp=`echo $resp | tr [:upper:] [:lower:]`
         if [[ $resp == "y" || $resp == "yes" || $resp == "s" || $resp == "si" ]]; then
             cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
-            vagrant destroy -f
+            vagrant destroy -f > /dev/null 2>&1
             cd "$dir_actual"
-            rm -r "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
             cat "$directorio"/.maquinas | sed -i "$select_drop d" ""$directorio""/.maquinas
-            sleep 2s
+            sleep 2
         fi   
+   else
+	clear
+	if [[ $select_drop != "salir" ]];then
+
+	   zenity --notification\
+		   --window-icon="error" \
+		   --text="Opcion \"$select_drop\" no valida"
+   	fi
    fi
 } 
 
@@ -232,9 +269,10 @@ notify-send Error "No se puede estrablecer la conexion. Puede que la maquina no 
 
 ## Controla las sentencia Apagar/reiniciar/suspender
 function c_init(){
-   echo "1. Apagar"
-   echo "2. Reinicia"
-   echo "3. Suspender"
+   echo "1. Iniciar"
+   echo "2. Apagar"
+   echo "3. Reinicia"
+   echo "4. Suspender"
    echo "salir"
    
    read -p 'Elige una opcion: ' comando_init
@@ -246,10 +284,12 @@ function c_init(){
    clear
    case $comando_init in
      1 )
-       vagrant halt;;
+       vagrant up;;
      2 )
-       vagrant reload;;
+       vagrant halt;;
      3 )
+       vagrant reload;;
+     4 )
        vagrant suspend;;
     salir)
       ;;
@@ -387,6 +427,7 @@ Dependencias vagrant
 Dependencias virtualbox
 Dependencias ansible
 Dependencias notify-send
+Dependencias zenity
 clear
 ## Menú maid
 while [[ true ]]; do
@@ -396,7 +437,7 @@ while [[ true ]]; do
     echo "4. Editar Maquina"
     echo "5. Controlador de snapshot"
     echo "6. Aprovisionar MKV"
-    echo "7. Apagar/reiniciar/suspender"
+    echo "7. Iniciar/Apagar/reiniciar/suspender"
     echo "8. Salir"
 
     read -p 'Introduce una opcion: ' opcion 
