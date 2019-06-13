@@ -1,12 +1,13 @@
 #!/bin/sh
 
-VALUE=`zenity --scale --text="Selecione la cantidad de memoria RAM." --value=1024 --max-value=8000 --min-value=512`
+TotalRam=`cat /proc/meminfo | head -n1 | awk '{print $2/1024}' | awk -F"." '{print $1}'`
 
-case $? in
-         0)
-		echo "Ha seleccionado $VALUE MB de RAM.";;
-         1)
-                echo "No ha seleccionado ningún valor.";;
-        -1)
-                echo "An unexpected error has occurred.";;
-esac
+cambiar_ram=`zenity --scale --text="Selecione la cantidad de memoria RAM." --value=1024 --max-value=$TotalRam --min-value=512`
+
+sed -i "s/vb\.memory = \".*/vb\.memory = \"$cambiar_ram\"/" ~/MKV/ubu/Vagrantfile
+
+
+
+echo "************************************************************"
+
+cat ~/MKV/ubu/Vagrantfile

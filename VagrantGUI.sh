@@ -86,6 +86,40 @@ function cambiar_nombre_mkv(){
     notify-send Bien: "NOMBRE ACTUALIZADO" -t 5000
 }
 
+function Asignar_ram(){
+   
+   	cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
+   	echo "     salir"
+
+  	read -p 'Seleciones una maquina": ' select_ram
+
+        cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_ram p" | awk -F":" '{print $1}')
+
+	TotalRam=`cat /proc/meminfo | head -n1 | awk '{print $2/1024}' | awk -F"." '{print $1}'`
+
+	cambiar_ram=`zenity --scale --text="Selecione la cantidad de memoria RAM." --value=1024 --max-value=$TotalRam --min-value=512`
+	sed -i "s/vb\.memory = \".*/vb\.memory = \"$cambiar_ram\"/" Vagrantfile
+	
+	cd "$dir_actual"
+}
+
+function Asignar_cpus(){
+   
+   	cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
+   	echo "     salir"
+
+  	read -p 'Seleciones una maquina": ' select_Cpu
+
+        cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_Cpu p" | awk -F":" '{print $1}')
+
+	TotalCpu=`cat /proc/cpuinfo | grep "cpu cores" | uniq | awk '{print $4}'`
+
+	cambiar_Cpu=`zenity --scale --text="Selecione la cantidad de CPUs." --value=1 --max-value=$TotalCpu --min-value=1`
+	sed -i "s/vb\.cpus = \".*/vb\.cpus = \"$cambiar_Cpu\"/" Vagrantfile
+	
+	cd "$dir_actual"
+}
+
 ## Crea una maquina virtual.
 function Crear_mkv(){
     check_d
@@ -126,12 +160,12 @@ function Crear_mkv(){
    sed -i "/config.vm.box/a\  config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile
    ## POR ALGUNA RAZON NO PUEDO PONER  2 IF CON || EN UN SOLO IF
    if [[ "$set_SO" == "centos/7" ]];then
-        sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
+        sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.cpus = \"1\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
    elif [[ "$set_SO" == "centos/6" ]]; then
  
-     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     service sshd restart\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
+     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.cpus = \"1\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n    yum -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     service sshd restart\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile
    else
-     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile 
+     sed -i "/config.vm.network/a\  config.vm.provider \"virtualbox\" do |vb| \n      vb.gui = false\n      vb.memory = \"1024\"\n      vb.cpus = \"1\"\n      vb.name = \"$nombre_maquina\"\n  end\n  config.vm.provision \"shell\",inline: <<-SHELL\n     apt-get -y install python\n     echo \"vagrant:vagrant\" | chpasswd\n     echo \"root:vagrant\" | chpasswd\n     sed -i 's/PermitRootLogin/#PermitRootLogin/' /etc/ssh/sshd_config\n     sed -i '/PermitRootLogin/a\PermitRootLogin yes' /etc/ssh/sshd_config\n     systemctl reload sshd\n     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config\n  SHELL"  Vagrantfile 
    fi
   
    grep -iw "$nombre_maquina" "$directorio"/.maquinas
@@ -141,12 +175,11 @@ function Crear_mkv(){
    fi
   
    ## Inicia la estancia
-   vagrant up | zenity --progress --auto-close\
-                  title="Actualizando los registros del sistema" \
-   
-		  text="Rastreando los registros de los correos..." \n
+   vagrant up |  zenity --progress --pulsate --auto-close\
+	   title="Actualizando los registros del sistema" \
+	   text="Rastreando los registros de los correos..." \
+	   percentage=0
 
-                  percentage=25
 # Notificacion
    notify-send Bien: "MAQUINA \"$(echo "$nombre_maquina" | tr [:lower:] [:upper:])\" EN FUNCIONAMIENTO!" -t 5000
    clear   
@@ -205,8 +238,6 @@ function Rm_mkv(){
    echo "     salir"
    
    
-   
-   
    read -p 'Seleciones cual borrar o "salir": ' select_drop
    
    
@@ -238,8 +269,8 @@ function Edit_mkv(){
     echo "1. Cambiar Nombre"
 #    echo "2. Direccion IP"
 #    echo "3. Adaptador De  Red"
-#    echo "4. USO De RAM"
-#    echo "5. USO De CPUS"
+    echo "4. USO De RAM"
+    echo "5. USO De CPUS"
 #    echo "6. Añadir HDD"
     echo "salir"
     read -p 'Introduce una opcion: ' opcion_editar
@@ -247,6 +278,10 @@ function Edit_mkv(){
    case  $opcion_editar in
         1) 
             cambiar_nombre_mkv;;
+	4)
+		Asignar_ram;;
+	5)
+		Asignar_cpus;;
         salir)
           ;;
         *) 
