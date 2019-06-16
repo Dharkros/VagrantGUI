@@ -28,7 +28,7 @@ function Dependencias(){
     Dependencias libnotify-bin
   fi
 }
-## Esta funcion que introduce una pausa hata pulsar la tecla "Enter".
+## Esta funcion que introduce una  hata pulsar la tecla "Enter".
 function Pausa(){
 	echo ""
 	read -p 'Pulse una tecla "Enter" para continuar...'
@@ -54,10 +54,8 @@ function check_f(){
 ## Cambia el nombre de una maquina virtual.
 function cambiar_nombre_mkv(){
     clear
-    cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
+    select_nombre=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
-    read -p 'Seleciones la maquina a modificar: ' select_nombre
-    clear
     new_name=`zenity --entry \
       --title="Nuevo nombre" \            
       --text="Escriba el nuevo nombre:" \
@@ -65,7 +63,8 @@ function cambiar_nombre_mkv(){
     
     new_name=`echo "$new_name" | tr -s '[[:space:]]' '_' | sed 's/_*$//'`
 
-    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}')
+    cd "$directorio"/"$select_nombre"
+
     grep -iw "vb.name =" Vagrantfile > /dev/null 2>&1
    
     if [[ $? -ne 0 ]]; then
@@ -76,8 +75,8 @@ function cambiar_nombre_mkv(){
         sed -i "s/vb\.name = \".*/vb\.name = \"$new_name\"/" Vagrantfile
     fi
     vagrant reload
-    mv "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}') "$directorio"/$new_name
-    sed -i "s/$(cat "$directorio"/.maquinas | sed -n "$select_nombre p" | awk -F":" '{print $1}'):/$new_name:/" "$directorio"/.maquinas
+    mv "$directorio"/$select_nombre "$directorio"/$new_name
+    sed -i "s/$select_nombre:/$new_name:/" "$directorio"/.maquinas
     cd "$dir_actual"
     notify-send Bien: "NOMBRE ACTUALIZADO" -t 5000
 }
@@ -86,12 +85,9 @@ function cambiar_nombre_mkv(){
 
 function Asignar_ram(){
     clear
-   	cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-   	echo "     salir"
+    select_ram=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
-  	read -p 'Seleciones una maquina": ' select_ram
-
-    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_ram p" | awk -F":" '{print $1}')
+    cd "$directorio"/$select_ram 
 
 	  TotalRam=`cat /proc/meminfo | head -n1 | awk '{print $2/1024}' | awk -F"." '{print $1}'`
 
@@ -105,12 +101,10 @@ function Asignar_ram(){
 
 function Asignar_cpus(){
     clear
-   	cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-   	echo "     salir"
 
-  	read -p 'Seleciones una maquina": ' select_Cpu
+    select_Cpu=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
-    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_Cpu p" | awk -F":" '{print $1}')
+    cd "$directorio"/$select_Cpu
 
 	  TotalCpu=`cat /proc/cpuinfo | grep "cpu cores" | uniq | awk '{print $4}'`
 
@@ -125,39 +119,41 @@ function Asignar_cpus(){
 
 function Asignar_red(){
     clear
-   	cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-   	echo "     salir"
+    select_red=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
-  	read -p 'Seleciones una maquina": ' select_red
-
-    cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_red p" | awk -F":" '{print $1}')
+    cd "$directorio"/$select_red
 
 
 ## Introducir IP
+    new_ip=$(zenity --width=450 --height=250 --title=VagrantGUI --entry --text=" Introduce una opción:
+    1. DHCP
+    2. IP ESTATICA
+    0. SALIR"
+    )
 
-    read -p 'DHCP/IP: ' new_ip
+     case  $new_ip in
+        1) 
+                sed  -i "s/config\.vm\.network\ \"public_network\",\ ip:\ \".*/config\.vm\.network\ \"public_network\",\ type:\ \"dhcp\"/" Vagrantfile;;
+                
+        2) 
+        
+              grep "config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile > /dev/null 2>&1
 
-    new_ip=`echo $new_ip | tr -s [[:upper:]] [[:lower:]]`
+              if [[ $? -eq 0 ]];then
 
-    if [[ $new_ip == "ip" ]];then
-        grep "config.vm.network \"public_network\", type: \"dhcp\"" Vagrantfile > /dev/null 2>&1
+                  cambio_ip=`zenity --entry \
+                    --title="Nueva IP" \            
+                    --text="Escriba la nueva IP:" \
+                    --entry-text "Nuevo IP"`   
 
-        if [[ $? -eq 0 ]];then
-
-            cambio_ip=`zenity --entry \
-              --title="Nueva IP" \            
-              --text="Escriba la nueva IP:" \
-              --entry-text "Nuevo IP"`   
-
-            sed -i "s/config\.vm\.network\ \"public_network\",\ type:\ \"dhcp\"/config\.vm\.network\ \"public_network\",\ ip:\ \"$cambio_ip\"/" Vagrantfile
-        fi
-
-    elif [[ $new_ip == "dhcp" ]];then
-      sed  -i "s/config\.vm\.network\ \"public_network\",\ ip:\ \".*/config\.vm\.network\ \"public_network\",\ type:\ \"dhcp\"/" Vagrantfile
-    
-    else
-        notify-send Error "Red: Opion no valida" -t 10000
-    fi
+                  sed -i "s/config\.vm\.network\ \"public_network\",\ type:\ \"dhcp\"/config\.vm\.network\ \"public_network\",\ ip:\ \"$cambio_ip\"/" Vagrantfile
+              fi;;
+        0)
+          cd "$dir_actual"
+          exit 0;;
+        *) 
+            zenity --warning --width=450 --height=5 --title=RED --text "Opion no valida";;
+     esac
 
 	  cd "$dir_actual"
 } 
@@ -224,10 +220,10 @@ function Crear_mkv(){
    ## Muestra la IP 
    echo  "La IP de la maquina es:"
    vagrant ssh -c 'ip a'
-   Pausa
-   read -p 'Quieres conectar ahora a la maquina? ' conecssh
-     conecssh=`echo $conecssh | tr [:upper:] [:lower:]`
-   if [[ $conecssh == "y" || $conecssh == "yes" || $conecssh == "s" || $conecssh == "si" ]]; then
+
+   zenity --question  --width=450 --height=10 --text="¿Quieres conectar ahora a la maquina?"
+   
+   if [[ $? -eq 0 ]]; then
         vagrant ssh
    fi
    cd "$dir_actual"
@@ -235,18 +231,20 @@ function Crear_mkv(){
 
 ## Seleciona el sistema operativo que usara la maquina virtual.
 function Add_so(){
-    echo "1. Ubuntu 18.04 (64/32 bits)"
-    echo "2. Ubuntu 16.04 (64/32 bits)"
-    echo "3. Ubuntu 14.04 (64/32 bits)"
-    echo "4. Centos 7"
-    echo "5. Centos 6"
-    read -p 'Introduce una opcion: ' opcion_add
+    opcion_add=$(zenity --width=450 --height=250 --title=VagrantGUI --entry --text=" Introduce una opción:
+    1. Ubuntu 18.04 (64/32 bits)
+    2. Ubuntu 16.04 (64/32 bits)
+    3. Ubuntu 14.04 (64/32 bits)
+    4. Centos 7
+    5. Centos 6"
+    )
+
     if [[ $opcion_add -lt 4 ]]; then
-    	read -p '64 bits o 32 bits: ' arquitertura
+    arquitertura=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Bits: " 1 64 2 32)
     fi
     while [[ $arquitertura -ne '32' && $arquitertura -ne '64' && $opcion_add -lt 4 ]]; do
-	clear
-	read -p 'Escriba 64 para usar una de distro de "64 bits" y 32 pra usar una de "32 bits": ' arquitertura	
+      clear
+      arquitertura=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="64 bits o 32 bits" --column=""  --column="Bits: " 1 64 2 32)
     done
     case $opcion_add in
         1 )
@@ -271,45 +269,33 @@ function Add_so(){
 
 ## Elimina maquina virtual.
 function Rm_mkv(){
-   cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-   echo "     salir"
+  
+  select_drop=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":") 1 salir)
    
-   
-   read -p 'Seleciones cual borrar o "salir": ' select_drop
-   
-   
-   if [[ $select_drop -le $(wc -l "$directorio"/.maquinas | awk '{print $1}') && $select_drop != "salir" ]];then
-        echo "Se va a eliminar $(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')"
-        read -p '¿Deseas continuar? (y/n) ' resp
-        resp=`echo $resp | tr [:upper:] [:lower:]`
-        if [[ $resp == "y" || $resp == "yes" || $resp == "s" || $resp == "si" ]]; then
-            cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
+   if [[ $select_drop != "salir" || ! -z $select_drop ]];then
+       
+        zenity --question --width=450 --height=10 --text="Se va a eliminar $select_drop, ¿Deseas continuar?"
+        
+        if [[ $? -eq 0 ]]; then
+            cd "$directorio"/$select_drop
             vagrant destroy -f > /dev/null 2>&1
             cd "$dir_actual"
-	    rm -r "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_drop p" | awk -F":" '{print $1}')
-            cat "$directorio"/.maquinas | sed -i "$select_drop d" ""$directorio""/.maquinas
-            sleep 2
+	          rm -r "$directorio"/$select_drop
+            cat "$directorio"/.maquinas | sed -i "/$select_drop/d" "$directorio"/.maquinas
         fi   
-   else
-	clear
-	if [[ $select_drop != "salir" ]];then
-
-	   zenity --notification\
-		   --window-icon="error" \
-		   --text="Opcion \"$select_drop\" no valida"
-   	fi
    fi
 } 
 
 ## Edita caracteristica de la maquina virtual.
 function Edit_mkv(){
-    echo "1. CAMBIAR NOMBRE"
-    echo "2. DIRECCIÓN IP"
-    echo "3. USO DE RAM"
-    echo "4. USO DE CPUs"
-#    echo "6. Añadir HDD"
-    echo "salir"
-    read -p 'Introduce una opcion: ' opcion_editar
+    opcion_editar=$(zenity --width=450 --height=250 --title=VagrantGUI --entry --text=" Introduce una opción:
+    1. CAMBIAR NOMBRE
+    2. DIRECCIÓN IP
+    3. USO DE RAM
+    4. USO DE CPUs
+    salir"
+    )
+    
     clear
    case  $opcion_editar in
         1) 
@@ -328,10 +314,9 @@ function Edit_mkv(){
 }
 ## Conecta mediante ssh a la maquina virtual.
 function Cx_mkv(){
-   cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-   read -p 'Seleciones la maquina a conectar: ' select_ssh
+   select_ssh=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
    
-   cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_ssh p" | awk -F":" '{print $1}')
+   cd "$directorio"/$select_ssh
    clear
    vagrant ssh
 
@@ -343,18 +328,16 @@ notify-send Error "No se puede estrablecer la conexion. Puede que la maquina no 
 
 ## Controla las sentencia Apagar/reiniciar/suspender
 function c_init(){
-   echo "1. Iniciar"
-   echo "2. Apagar"
-   echo "3. Reinicia"
-   echo "4. Suspender"
-   echo "salir"
+   comando_init=$(zenity --width=450 --height=250 --title=VagrantGUI --entry --text=" Introduce una opción:
+   1. Iniciar
+   2. Apagar
+   3. Reinicia
+   4. Suspender
+   SALIR")
    
-   read -p 'Elige una opcion: ' comando_init
-
-   cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-   read -p 'Seleciones una maquina: ' select_maquina_init
+   select_maquina_init=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
    
-   cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_maquina_init p" | awk -F":" '{print $1}')
+   cd "$directorio"/$select_maquina_init 
    clear
    case $comando_init in
      1 )
@@ -376,18 +359,17 @@ function c_init(){
 ## Controla la administracion de instantaneas
 function c_snapshot(){
 
-   cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-   read -p 'Seleciones una maquina: ' select_maquina_snapshot
-   cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_maquina_snapshot p" | awk -F":" '{print $1}')
-   clear
-   echo "1. Listar snapshot"
-   echo "2. Crear snapshot"
-   echo "3. Restaura snapshot"
-   echo "4. Eliminar snapshot"
-   echo "salir"
+   select_maquina_snapshot=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
-   read -p 'Elige una opcion: ' comando_snapshot
-   
+   cd "$directorio"/"$select_maquina_snapshot"
+
+   comando_snapshot=$(zenity --width=450 --height=250 --title=VagrantGUI --entry --text=" Introduce una opción:
+   1. Listar snapshot
+   2. Crear snapshot
+   3. Restaura snapshot
+   4. Eliminar snapshot
+   SALIR")
+
    clear
    case $comando_snapshot in
      1 )
@@ -413,15 +395,16 @@ function c_snapshot(){
 
 function provision(){
     if [[ "$git" == "true" ]];then
-    	  cat "$directorio"/.maquinas | awk -F":" '{print $1}' | nl
-    	  read -p 'Seleciones una maquina: ' select_maquina_provision
-       	cd "$directorio"/$(cat "$directorio"/.maquinas | sed -n "$select_maquina_provision p" | awk -F":" '{print $1}')
+    	  select_maquina_provision=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+       	cd "$directorio"/$select_maquina_provision
        	clear
-       	echo "1. LDAP client (Solo Ubuntu)"
-       	echo "2. Apache2 (solo Ubuntu)"   
-       	echo "3. REINICIAR Y APROVISIONAR" 
-        echo "salir"
-       	read -p 'Seleciona que provision decea hace: ' set_provision
+        set_provision=$(zenity --width=450 --height=250 --title=VagrantGUI --entry --text=" Introduce una opción:
+       	 1. LDAP client (UBUNTU)
+         2. LDAP client (CENTOS)
+       	 3. Apache2 (UBUNTU)   
+       	 4. REINICIAR Y APROVISIONAR
+         SALIR"
+        )
 
        	case $set_provision in
     	      1 )
@@ -436,7 +419,19 @@ function provision(){
                        clear
                        Reload_provision
                     fi;;
-            2 )
+    	      2 )
+                    grep -w "ldap_cliente_centos.yml" Vagrantfile > /dev/null 2>&1
+
+                    if [[ $? -eq 0 ]]; then
+                       clear
+                       echo "Ya esta aprovicionado con LDAP client"
+                    else
+                       sed -i 's/vb.gui = false/vb.gui = true/' Vagrantfile
+        		           sed -i "/\ SHELL/a\  config.vm.provision \"ansible\" do |ansible|\n       ansible.playbook = \"/home/$(whoami)/ansible-playbook/ldap_cliente_centos.yml\"\n  end" Vagrantfile
+                       clear
+                       Reload_provision
+                    fi;;
+            3 )
                     grep -w "install_apache2.yml" Vagrantfile > /dev/null 2>&1
 
                     if [[ $? -eq 0 ]]; then
@@ -448,7 +443,7 @@ function provision(){
                        Reload_provision
                     fi;;
 
-    	      3 )
+    	      4 )
     		           vagrant reload --provision;;
                    
     	      salir)
@@ -504,27 +499,29 @@ Dependencias notify-send
 Dependencias zenity
 clear
 ## Menú maid
-while [[ true ]]; do
-    echo "1. Crear Maquina"
-    echo "2. Borrar Maquina"
-    echo "3. Conectar a MKV"
-    echo "4. Editar Maquina"
-    echo "5. Controlador de snapshot"
-    echo "6. Aprovisionar MKV"
-    echo "7. Iniciar/Apagar/reiniciar/suspender"
-    echo "8. Salir"
+while [[ $opcion -ne 0 ]] 
+clear 
+do
+opcion=$(zenity --width=450 --height=250 --title=VagrantGUI --entry --text=" Introduce una opción:
+     1. Crear Maquina
+     2. Borrar Maquina
+     3. Conectar a MKV
+     4. Editar Maquina
+     5. Controlador de snapshot
+     6. Aprovisionar MKV
+     7. Iniciar/Apagar/reiniciar/suspender
+     0. Salir")
 
-    read -p 'Introduce una opcion: ' opcion 
     case $opcion in
     1)
         clear
         Crear_mkv
-        Pausa;;
+        ;;
 
     2)
         clear
         Rm_mkv
-        Pausa;;
+        ;;
 
     3)
         clear
@@ -533,27 +530,26 @@ while [[ true ]]; do
     4)
         clear
         Edit_mkv
-        Pausa;;
+        ;;
     5)
         clear
         c_snapshot
-        Pausa;;
+        ;;
     6)
         clear
         sync_provision
 	      provision
-        Pausa;;
+        ;;
     7)
         clear
         c_init
-        Pausa;;
+        ;;
 
-    8)
+    0)
         clear
-	echo "Adios!!!"
-	sleep 2
+	zenity --info --width=450 --height=5 --title=VagrantGUI --text "ADIOS!!!"
 	clear
-	exit;;
+	exit 0;;
     remove)
           rm -rf ~/MKV;;
     *)
