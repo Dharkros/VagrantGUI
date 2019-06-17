@@ -222,9 +222,8 @@ function Crear_mkv(){
    clear   
    
    ## Muestra la IP 
-   echo  "La IP de la maquina es:"
-   vagrant ssh -c 'ip a'
-
+   vagrant ssh -c 'ip a' | zenity --text-info --title="IP de la maquina es: " --width=750 --height=420
+   
    zenity --question  --width=450 --height=10 --text="¿Quieres conectar ahora a la maquina?"
    
    if [[ $? -eq 0 ]]; then
