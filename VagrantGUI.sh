@@ -55,7 +55,7 @@ function check_f(){
 ## Cambia el nombre de una maquina virtual.
 function cambiar_nombre_mkv(){
     clear
-    select_nombre=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+    select_nombre=$(zenity --list --radiolist --separator=' ' --title="Editar nombre" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
     new_name=$(zenity --entry\
     --width=450\
@@ -80,10 +80,10 @@ function cambiar_nombre_mkv(){
      
       mv "$directorio"/$select_nombre "$directorio"/$new_name
       sed -i "s/$select_nombre:/$new_name:/" "$directorio"/.maquinas
-      zenity --question  --width=450 --height=10 --title=Aplicar cambios --text="Para aplicar los cambios es necesario reiniciar ¿Quieres reiniciar la maquina ahora?"
+      zenity --question  --width=450 --height=10 --title="Aplicar cambios" --text="Para aplicar los cambios es necesario reiniciar ¿Quieres reiniciar la maquina ahora?"
       
       if [[ $? -eq 0 ]]; then
-          vagrant reload | zenity --progress --width=300 --height=50 --pulsate --auto-close --title=REINICIANDO...
+          vagrant reload | zenity --progress --width=300 --height=50 --pulsate --auto-close --title="REINICIANDO..."
           cd "$dir_actual"
           zenity --notification  --title=BIEN --text="NOMBRE ACTUALIZADO"
       fi
@@ -94,7 +94,7 @@ function cambiar_nombre_mkv(){
 
 function Asignar_ram(){
     clear
-    select_ram=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+    select_ram=$(zenity --list --radiolist --separator=' ' --title="RAM" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
     cd "$directorio"/$select_ram 
 
@@ -111,7 +111,7 @@ function Asignar_ram(){
 function Asignar_cpus(){
     clear
 
-    select_Cpu=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+    select_Cpu=$(zenity --list --radiolist --separator=' ' --title="CPUs" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
     cd "$directorio"/$select_Cpu
 
@@ -128,7 +128,7 @@ function Asignar_cpus(){
 
 function Asignar_red(){
     clear
-    select_red=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+    select_red=$(zenity --list --radiolist --separator=' ' --title="Red" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
     cd "$directorio"/$select_red
 
@@ -171,7 +171,7 @@ function Crear_mkv(){
 
 
     nombre_maquina=$(zenity --entry\
-    --title="Crear maquina"\
+    --title="Crear máquina"\
     --text="Escriba el nombre de la maquina:"\
     --entry-text "Nombre de la nueva maquina")                        
 
@@ -180,7 +180,7 @@ function Crear_mkv(){
     while [[ -d "$directorio"/"$nombre_maquina" ]]; do
         clear
          nombre_maquina=$(zenity --entry\
-         --title="Crear maquina"\
+         --title="Crear máquina"\
          --text="Ya existe una maquina con este nombre, porfavor elija otro nombre:"\
          --entry-text "Nombre de la nueva maquina")  
 
@@ -216,15 +216,16 @@ function Crear_mkv(){
    fi
   
    ## Inicia la estancia
-   vagrant up |  zenity --progress --width=300 --height=50 --pulsate --auto-close --title=CREANDO MAQUINA...;
-# Notificacion
+   vagrant up |  zenity --progress --width=300 --height=50 --pulsate --auto-close --title="CREANDO MÁQUINA..."
+  
+  # Notificacion
    zenity --notification  --title=BIEN --text="MAQUINA \"$(echo $nombre_maquina | tr [:lower:] [:upper:])\" EN FUNCIONAMIENTO!"
    clear   
    
    ## Muestra la IP 
    vagrant ssh -c 'ip a' | zenity --text-info --title="IP de la maquina es: " --width=750 --height=420
    
-   zenity --question  --width=450 --height=10 --text="¿Quieres conectar ahora a la maquina?"
+   zenity --question  --width=450 --height=10 --title=Conexión --text="¿Quieres conectar ahora a la máquina?"
    
    if [[ $? -eq 0 ]]; then
         clear
@@ -266,7 +267,7 @@ function Add_so(){
 ## Elimina maquina virtual.
 function Rm_mkv(){
   
-  select_drop=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+  select_drop=$(zenity --list --radiolist --separator=' ' --title="Borrar máquina" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
    
    if [[ ! -z $select_drop ]];then
        
@@ -283,7 +284,7 @@ function Rm_mkv(){
 
 ## Edita caracteristica de la maquina virtual.
 function Edit_mkv(){
-    opcion_editar=$(zenity --list --width=450 --height=250 --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " 1 "CAMBIAR NOMBRE"\
+    opcion_editar=$(zenity --list --width=450 --height=250 --radiolist --separator=' ' --title="Editar máquina" --text="Selecione una opcion..." --column=""  --column="Nombre: " 1 "CAMBIAR NOMBRE"\
     2 "DIRECCIÓN IP"\
     3 "USO DE RAM"\
     4 "USO DE CPUs")
@@ -307,7 +308,7 @@ function Edit_mkv(){
 }
 ## Conecta mediante ssh a la maquina virtual.
 function Cx_mkv(){
-   select_ssh=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+   select_ssh=$(zenity --list --radiolist --separator=' ' --title="Conexión" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
    
    cd "$directorio"/$select_ssh
    clear
@@ -327,7 +328,7 @@ function c_init(){
    4 Suspender)
    
 
-   select_maquina_init=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+   select_maquina_init=$(zenity --list --radiolist --separator=' ' --title="Control init" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
    
    cd "$directorio"/$select_maquina_init 
    clear
@@ -349,16 +350,16 @@ function c_init(){
 ## Controla la administracion de instantaneas
 function c_snapshot(){
 
-   select_maquina_snapshot=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+   select_maquina_snapshot=$(zenity --list --radiolist --separator=' ' --title="SNAPSHOT" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
 
    cd "$directorio"/"$select_maquina_snapshot"
 
-   comando_snapshot=$(zenity --list --width=450 --height=260 --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: "  1 "Listar snapshot" 2 "Crear snapshot" 3 "Restaura snapshot" 4 "Eliminar snapshot")
+   comando_snapshot=$(zenity --list --width=450 --height=260 --radiolist --separator=' ' --title="SNAPSHOT" --text="Selecione una opcion..." --column=""  --column="Nombre: "  1 "Listar snapshot" 2 "Crear snapshot" 3 "Restaura snapshot" 4 "Eliminar snapshot")
 
    clear
    case $comando_snapshot in
      "Listar snapshot" )
-       vagrant snapshot list;;
+       vagrant snapshot list | zenity --text-info --title="Lista De Snapshot: " --width=250 --height=150;;
      "Crear snapshot" )
        name_snapshot=$(zenity --entry --title=SNAPSHOT --text="Nombre de snapchot")
        vagrant snapshot save $name_snapshot;;
@@ -376,10 +377,10 @@ function c_snapshot(){
 
 function provision(){
     if [[ "$git" == "true" ]];then
-    	  select_maquina_provision=$(zenity --list --radiolist --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
+    	  select_maquina_provision=$(zenity --list --radiolist --separator=' ' --title="Provision" --text="Selecione una opcion..." --column=""  --column="Nombre: " $(cat "$directorio"/.maquinas | nl | tr -d ":"))
        	cd "$directorio"/$select_maquina_provision
        	clear
-        set_provision=$(zenity --list --radiolist --width=450 --height=300 --separator=' ' --title="VagrantGUI." --text="Selecione una opcion..." --column=""  --column="Nombre: "\
+        set_provision=$(zenity --list --radiolist --width=450 --height=300 --separator=' ' --title="Provisión" --text="Selecione una opcion..." --column=""  --column="Nombre: "\
          1 "LDAP client (UBUNTU)"\
          2 "LDAP client (CENTOS)"\
        	 3 "Apache2 (UBUNTU)"\
